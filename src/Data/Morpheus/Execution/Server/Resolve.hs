@@ -16,7 +16,6 @@ module Data.Morpheus.Execution.Server.Resolve
   , fullSchema
   )
 where
-
 import           Data.Aeson                     ( encode )
 import           Data.Aeson.Internal            ( formatError
                                                 , ifromJSON

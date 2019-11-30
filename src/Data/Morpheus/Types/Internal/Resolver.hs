@@ -31,6 +31,7 @@ module Data.Morpheus.Types.Internal.Resolver
   )
 where
 
+import           Debug.Trace
 import           Control.Monad.Trans.Class      ( MonadTrans(..) )
 import           Control.Monad.Trans.Except     ( ExceptT(..)
                                                 , runExceptT
@@ -172,8 +173,14 @@ resolveObject
 resolveObject selectionSet fieldResolvers =
   gqlObject <$> traverse selectResolver selectionSet
  where
-  selectResolver (key, selection@Selection { selectionAlias }) =
-    (fromMaybe key selectionAlias, ) <$> lookupRes selection
+  selectResolver (key, selection@Selection { selectionAlias }) = trace
+    (  "key="
+    <> show key
+    <> ("key=" <> show key <> " | selectionSet=" <> show
+         (fst <$> fieldResolvers)
+       )
+    )
+    ((fromMaybe key selectionAlias, ) <$> lookupRes selection)
    where
     lookupRes sel =
       (fromMaybe (const $ pure gqlNull) $ lookup key fieldResolvers) (key, sel)
