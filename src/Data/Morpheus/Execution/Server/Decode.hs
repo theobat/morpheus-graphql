@@ -41,23 +41,22 @@ import           Data.Morpheus.Kind             ( ENUM
                                                 , INPUT_OBJECT
                                                 , INPUT_UNION
                                                 , SCALAR
+                                                , AUTO
                                                 )
 import           Data.Morpheus.Types.GQLScalar  ( GQLScalar(..)
                                                 , toScalar
                                                 )
 import           Data.Morpheus.Types.GQLType    ( GQLType(KIND, __typeName) )
-import           Data.Morpheus.Types.Internal.AST.Selection
-                                                ( Argument(..)
+import           Data.Morpheus.Types.Internal.AST
+                                                ( Key
+                                                , Argument(..)
                                                 , Arguments
-                                                )
-import           Data.Morpheus.Types.Internal.AST.Base
-                                                ( Key )
-import           Data.Morpheus.Types.Internal.Validation
-                                                ( Validation )
-import           Data.Morpheus.Types.Internal.AST.Value
-                                                ( Object
+                                                , Object
                                                 , Value(..)
                                                 )
+import           Data.Morpheus.Types.Internal.Resolving
+                                                ( Validation )
+
 
 -- | Decode GraphQL query arguments and input values
 class Decode a where
@@ -84,6 +83,11 @@ instance (GQLScalar a) => DecodeKind SCALAR a where
 
 -- ENUM
 instance (Generic a, EnumRep (Rep a)) => DecodeKind ENUM a where
+  decodeKind _ = withEnum (fmap to . decodeEnum)
+
+-- INPUT_UNION
+-- TODO: FIXME
+instance (Generic a, EnumRep (Rep a)) => DecodeKind AUTO a where
   decodeKind _ = withEnum (fmap to . decodeEnum)
 
 -- INPUT_OBJECT

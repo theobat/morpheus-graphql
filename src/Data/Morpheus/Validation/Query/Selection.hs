@@ -21,21 +21,17 @@ import           Data.Morpheus.Error.Selection  ( cannotQueryField
                                                 , subfieldsNotSelected
                                                 )
 import           Data.Morpheus.Error.Variable   ( unknownType )
-import           Data.Morpheus.Types.Internal.AST.Operation
-                                                ( ValidVariables )
-import           Data.Morpheus.Types.Internal.AST.Selection
-                                                ( Selection(..)
+import           Data.Morpheus.Types.Internal.AST
+                                                ( ValidVariables 
+                                                , Selection(..)
                                                 , SelectionRec(..)
                                                 , SelectionSet
                                                 , Fragment(..)
                                                 , FragmentLib
                                                 , RawSelection(..)
                                                 , RawSelectionSet
-                                                )
-import           Data.Morpheus.Types.Internal.AST.Base
-                                                ( Ref(..) )
-import           Data.Morpheus.Types.Internal.AST.Data
-                                                ( DataField(..)
+                                                , DataField(..)
+                                                , Ref(..)
                                                 , DataObject
                                                 , DataTyCon(..)
                                                 , DataType(..)
@@ -48,7 +44,7 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , lookupType
                                                 , lookupUnionTypes
                                                 )
-import           Data.Morpheus.Types.Internal.Validation
+import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
                                                 , Failure(..)
                                                 )

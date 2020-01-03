@@ -1,4 +1,3 @@
-{-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.Parsing.Document.Parser
@@ -20,9 +19,9 @@ import           Data.Morpheus.Parsing.Internal.Internal
                                                 ( processErrorBundle )
 import           Data.Morpheus.Parsing.Internal.Terms
                                                 ( spaceAndComments )
-import           Data.Morpheus.Types.Internal.AST.Data
+import           Data.Morpheus.Types.Internal.AST
                                                 ( RawDataType )
-import           Data.Morpheus.Types.Internal.Validation
+import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
                                                 , Failure(..)
                                                 )

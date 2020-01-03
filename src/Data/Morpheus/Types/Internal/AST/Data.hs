@@ -10,8 +10,8 @@
 {-# LANGUAGE RankNTypes            #-}
 
 module Data.Morpheus.Types.Internal.AST.Data
-  ( Key
-  , DataScalar
+  ( 
+    DataScalar
   , DataEnum
   , DataObject
   , DataArgument
@@ -56,8 +56,6 @@ module Data.Morpheus.Types.Internal.AST.Data
   , QUERY
   , MUTATION
   , SUBSCRIPTION
-  , Name
-  , Description
   , isEntNode
   , lookupInputType
   , coerceDataObject
@@ -120,18 +118,16 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , Name
                                                 , Description
                                                 )
-import           Data.Morpheus.Types.Internal.Validation
+import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( Validation
                                                 , Failure(..)
                                                 , GQLErrors
+                                                , LibUpdater
+                                                , resolveUpdates
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( Value(..)
                                                 , ScalarValue(..)
-                                                )
-import           Data.Morpheus.Execution.Internal.GraphScanner
-                                                ( LibUpdater
-                                                , resolveUpdates
                                                 )
 import           Data.Morpheus.Error.Schema     ( nameCollisionError )
 

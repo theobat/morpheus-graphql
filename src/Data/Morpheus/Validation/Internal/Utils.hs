@@ -10,14 +10,14 @@ module Data.Morpheus.Validation.Internal.Utils
 where
 
 import           Data.List                      ( (\\) )
-import           Data.Morpheus.Types.Internal.AST.Base
+import           Data.Morpheus.Types.Internal.AST
                                                 ( Ref(..)
                                                 , Key
                                                 , anonymousRef
                                                 )
 import qualified Data.Set                      as S
 import           Data.Text                      ( Text )
-import           Data.Morpheus.Types.Internal.Validation
+import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Failure(..) )
 
 data VALIDATION_MODE

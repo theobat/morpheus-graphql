@@ -18,7 +18,7 @@ import           Data.Maybe                     ( isJust )
 -- Morpheus
 import           Data.Morpheus.Schema.Schema
 import           Data.Morpheus.Schema.TypeKind  ( TypeKind(..) )
-import           Data.Morpheus.Types.Internal.AST.Data
+import           Data.Morpheus.Types.Internal.AST
                                                 ( DataField(..)
                                                 , DataTyCon(..)
                                                 , DataType(..)
@@ -36,10 +36,8 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , DataEnumValue(..)
                                                 , lookupDeprecated
                                                 , lookupDeprecatedReason
-                                                )
-import           Data.Morpheus.Types.Internal.AST.Value
-                                                ( convertToJSONName )
-import           Data.Morpheus.Types.Internal.Validation
+                                                , convertToJSONName )
+import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Failure(..) )
 
 constRes :: Applicative m => a -> b -> m a

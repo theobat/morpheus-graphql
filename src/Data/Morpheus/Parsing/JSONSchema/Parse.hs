@@ -21,7 +21,7 @@ import           Data.Morpheus.Parsing.JSONSchema.Types
                                                 , Type(..)
                                                 )
 import           Data.Morpheus.Schema.TypeKind  ( TypeKind(..) )
-import           Data.Morpheus.Types.Internal.AST.Data
+import           Data.Morpheus.Types.Internal.AST
                                                 ( DataField
                                                 , DataType(..)
                                                 , DataTypeLib
@@ -37,7 +37,7 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , createUnionType
                                                 , toHSWrappers
                                                 )
-import           Data.Morpheus.Types.Internal.Validation
+import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation )
 import           Data.Morpheus.Types.IO         ( JSONResponse(..) )
 import           Data.Semigroup                 ( (<>) )

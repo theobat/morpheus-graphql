@@ -16,7 +16,7 @@ import           Data.Morpheus.Error.Document.Interface
                                                 )
 import           Data.Morpheus.Rendering.RenderGQL
                                                 ( RenderGQL(..) )
-import           Data.Morpheus.Types.Internal.AST.Data
+import           Data.Morpheus.Types.Internal.AST
                                                 ( DataField(..)
                                                 , DataType(..)
                                                 , DataObject
@@ -27,8 +27,10 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , isWeaker
                                                 , isWeaker
                                                 )
-import           Data.Morpheus.Types.Internal.Validation
-                                                ( Validation, Failure(..) )
+import           Data.Morpheus.Types.Internal.Resolving
+                                                ( Validation
+                                                , Failure(..)
+                                                )
 
 validatePartialDocument :: [(Key, RawDataType)] -> Validation [(Key, DataType)]
 validatePartialDocument lib = catMaybes <$> traverse validateType lib

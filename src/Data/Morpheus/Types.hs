@@ -39,20 +39,19 @@ import           Data.Morpheus.Types.GQLScalar  ( GQLScalar
                                                 )
 import           Data.Morpheus.Types.GQLType    ( GQLType(KIND, description) )
 import           Data.Morpheus.Types.ID         ( ID(..) )
-import           Data.Morpheus.Types.Internal.AST.Data
+import           Data.Morpheus.Types.Internal.AST
                                                 ( MUTATION
                                                 , QUERY
                                                 , SUBSCRIPTION
+                                                , ScalarValue(..)
                                                 )
-import           Data.Morpheus.Types.Internal.Resolver
+import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Event(..)
                                                 , GQLRootResolver(..)
                                                 , Resolver(..)
                                                 , LiftEither(..)
                                                 , lift
                                                 )
-import           Data.Morpheus.Types.Internal.AST.Value
-                                                ( ScalarValue(..) )
 import           Data.Morpheus.Types.IO         ( GQLRequest(..)
                                                 , GQLResponse(..)
                                                 )

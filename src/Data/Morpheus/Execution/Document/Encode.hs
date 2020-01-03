@@ -20,7 +20,7 @@ import           Data.Morpheus.Execution.Server.Encode
                                                 , ObjectResolvers(..)
                                                 )
 import           Data.Morpheus.Types.GQLType    ( TRUE )
-import           Data.Morpheus.Types.Internal.AST.Data
+import           Data.Morpheus.Types.Internal.AST
                                                 ( DataField(..)
                                                 , QUERY
                                                 , SUBSCRIPTION
@@ -29,7 +29,7 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , GQLTypeD(..)
                                                 , TypeD(..)
                                                 )
-import           Data.Morpheus.Types.Internal.Resolver
+import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Resolver
                                                 , MapStrategy(..)
                                                 , LiftEither

@@ -10,9 +10,9 @@ where
 
 import qualified Data.List.NonEmpty            as NonEmpty
 import           Data.Morpheus.Error.Utils      ( toLocation )
-import           Data.Morpheus.Types.Internal.AST.Base
+import           Data.Morpheus.Types.Internal.AST
                                                 ( Position )
-import           Data.Morpheus.Types.Internal.Validation
+import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLError(..)
                                                 , GQLErrors
                                                 )
@@ -45,7 +45,7 @@ processErrorBundle = fmap parseErrorToGQLError . bundleToErrors
  where
   parseErrorToGQLError :: (ParseError Text Void, SourcePos) -> GQLError
   parseErrorToGQLError (err, position) = GQLError
-    { message      = pack (parseErrorPretty err)
+    { message   = pack (parseErrorPretty err)
     , locations = [toLocation position]
     }
   bundleToErrors
