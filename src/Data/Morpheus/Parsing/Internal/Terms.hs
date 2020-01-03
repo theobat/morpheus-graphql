@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections     #-}
 
@@ -26,6 +27,7 @@ module Data.Morpheus.Parsing.Internal.Terms
   , keyword
   , operator
   , optDescription
+  , parseNegativeSign
   )
 where
 
@@ -69,15 +71,21 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Key
                                                 , Description
                                                 , Name
-                                                , TypeWrapper(..)
                                                 , toHSWrappers
-                                                , convertToHaskellName )
+                                                , convertToHaskellName
+                                                , Ref(..)
+                                                , TypeRef(..)
+                                                )
 
 
 -- Name : https://graphql.github.io/graphql-spec/June2018/#sec-Names
 --
 -- Name :: /[_A-Za-z][_0-9A-Za-z]*/
 --
+
+parseNegativeSign :: Parser Bool
+parseNegativeSign = (char '-' $> True <* spaceAndComments) <|> pure False
+
 parseName :: Parser Name
 parseName = token
 
@@ -121,12 +129,13 @@ qualifier = label "qualifier" $ do
 --
 -- Variable :  $Name
 --
-variable :: Parser (Text, Position)
+variable :: Parser Ref
 variable = label "variable" $ do
-  position' <- getLocation
-  _         <- char '$'
-  varName'  <- token
-  return (varName', position')
+  refPosition <- getLocation
+  _           <- char '$'
+  refName     <- token
+  spaceAndComments
+  pure $ Ref { refName, refPosition }
 
 spaceAndComments1 :: Parser ()
 spaceAndComments1 = space1 *> spaceAndComments
@@ -244,8 +253,11 @@ parseAlias = try (optional alias) <|> pure Nothing
   where alias = label "alias" $ token <* char ':' <* spaceAndComments
 
 
-parseType :: Parser ([TypeWrapper], Key)
+parseType :: Parser TypeRef
 parseType = do
-  (wrappers, fieldType) <- parseWrappedType
-  nonNull               <- parseNonNull
-  pure (toHSWrappers $ nonNull ++ wrappers, fieldType)
+  (wrappers, typeConName) <- parseWrappedType
+  nonNull                 <- parseNonNull
+  pure TypeRef { typeConName
+               , typeArgs     = Nothing
+               , typeWrappers = toHSWrappers $ nonNull ++ wrappers
+               }

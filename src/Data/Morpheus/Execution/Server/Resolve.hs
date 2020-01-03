@@ -38,7 +38,8 @@ import           Data.Morpheus.Execution.Server.Encode
                                                 )
 import           Data.Morpheus.Execution.Server.Introspect
                                                 ( IntroCon
-                                                , ObjectFields(..)
+                                                , introspectObjectFields
+                                                , TypeScope(..)
                                                 )
 import           Data.Morpheus.Execution.Subscription.ClientRegister
                                                 ( GQLState
@@ -56,14 +57,18 @@ import           Data.Morpheus.Types.Internal.AST
                                                 ( Operation(..)
                                                 , ValidOperation
                                                 , DataFingerprint(..)
-                                                , DataTyCon(..)
-                                                , DataTypeLib(..)
+                                                , DataTypeContent(..)
+                                                , Schema(..)
+                                                , DataType(..)
                                                 , MUTATION
                                                 , OperationType(..)
                                                 , QUERY
                                                 , SUBSCRIPTION
                                                 , initTypeLib
-                                                , Value
+                                                , ValidValue
+                                                , Name
+                                                , DataField
+                                                , VALIDATION_MODE(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLRootResolver(..)
@@ -83,12 +88,10 @@ import           Data.Morpheus.Types.IO         ( GQLRequest(..)
                                                 , GQLResponse(..)
                                                 , renderResponse
                                                 )
-import           Data.Morpheus.Validation.Internal.Utils
-                                                ( VALIDATION_MODE(..) )
 import           Data.Morpheus.Validation.Query.Validation
                                                 ( validateRequest )
 import           Data.Typeable                  ( Typeable )
-
+import           Control.Monad.IO.Class         ( MonadIO() )
 
 type EventCon event
   = (Eq (StreamChannel event), Typeable event, GQLChannel event)
@@ -146,12 +149,12 @@ coreResolver
    . (Monad m, RootResCon m event query mut sub)
   => GQLRootResolver m event query mut sub
   -> GQLRequest
-  -> ResponseStream event m Value
+  -> ResponseStream event m ValidValue
 coreResolver root@GQLRootResolver { queryResolver, mutationResolver, subscriptionResolver } request
   = validRequest >>= execOperator
  where
   validRequest
-    :: Monad m => ResponseStream event m (DataTypeLib, ValidOperation)
+    :: Monad m => ResponseStream event m (Schema, ValidOperation)
   validRequest = cleanEvents $ ResultT $ pure $ do
     schema <- fullSchema $ Identity root
     query  <- parseGQL request >>= validateRequest schema FULL_VALIDATION
@@ -168,11 +171,11 @@ coreResolver root@GQLRootResolver { queryResolver, mutationResolver, subscriptio
       toResponseRes (encodeSubscription subscriptionResolver operation)
 
 statefulResolver
-  :: EventCon event
-  => GQLState IO event
-  -> (GQLRequest -> ResponseStream event IO Value)
+  :: (EventCon event, MonadIO m)
+  => GQLState m event
+  -> (GQLRequest -> ResponseStream event m ValidValue)
   -> L.ByteString
-  -> IO L.ByteString
+  -> m L.ByteString
 statefulResolver state streamApi requestText = do
   res <- runResultT (decodeNoDup requestText >>= streamApi)
   mapM_ execute (unpackEvents res)
@@ -181,46 +184,52 @@ statefulResolver state streamApi requestText = do
   execute (Publish updates) = publishUpdates state updates
   execute Subscribe{}       = pure ()
 
-
 fullSchema
   :: forall proxy m event query mutation subscription
    . (IntrospectConstraint m event query mutation subscription)
   => proxy (GQLRootResolver m event query mutation subscription)
-  -> Validation DataTypeLib
+  -> Validation Schema
 fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
  where
   querySchema = resolveUpdates
     (initTypeLib (operatorType (hiddenRootFields ++ fields) "Query"))
     (defaultTypes : types)
    where
-    (fields, types) = objectFields
+    (fields, types) = introspectObjectFields
       (Proxy @(CUSTOM (query (Resolver QUERY event m))))
-      (Proxy @(query (Resolver QUERY event m)))
+      ("type for query", OutputType, Proxy @(query (Resolver QUERY event m)))
   ------------------------------
   mutationSchema lib = resolveUpdates
     (lib { mutation = maybeOperator fields "Mutation" })
     types
    where
-    (fields, types) = objectFields
+    (fields, types) = introspectObjectFields
       (Proxy @(CUSTOM (mutation (Resolver MUTATION event m))))
-      (Proxy @(mutation (Resolver MUTATION event m)))
+      ( "type for mutation"
+      , OutputType
+      , Proxy @(mutation (Resolver MUTATION event m))
+      )
   ------------------------------
   subscriptionSchema lib = resolveUpdates
     (lib { subscription = maybeOperator fields "Subscription" })
     types
    where
-    (fields, types) = objectFields
+    (fields, types) = introspectObjectFields
       (Proxy @(CUSTOM (subscription (Resolver SUBSCRIPTION event m))))
-      (Proxy @(subscription (Resolver SUBSCRIPTION event m)))
-   -- maybeOperator :: [a] -> Text -> Maybe (Text, DataTyCon[a])
+      ( "type for subscription"
+      , OutputType
+      , Proxy @(subscription (Resolver SUBSCRIPTION event m))
+      )
+  maybeOperator :: [(Name, DataField)] -> Name -> Maybe (Name, DataType)
   maybeOperator []     = const Nothing
   maybeOperator fields = Just . operatorType fields
-  -- operatorType :: [a] -> Text -> (Text, DataTyCon[a])
-  operatorType typeData typeName =
+  -------------------------------------------------
+  operatorType :: [(Name, DataField)] -> Name -> (Name, DataType)
+  operatorType fields typeName =
     ( typeName
-    , DataTyCon { typeData
-                , typeName
-                , typeFingerprint = SystemFingerprint typeName
-                , typeMeta        = Nothing
-                }
+    , DataType { typeContent     = DataObject [] fields
+               , typeName
+               , typeFingerprint = DataFingerprint typeName []
+               , typeMeta        = Nothing
+               }
     )

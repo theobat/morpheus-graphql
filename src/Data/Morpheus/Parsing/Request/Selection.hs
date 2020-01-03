@@ -34,11 +34,12 @@ import           Data.Morpheus.Parsing.Request.Arguments
                                                 ( maybeArguments )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( Selection(..)
+                                                , SelectionContent(..)
+                                                , Ref(..)
                                                 , Fragment(..)
                                                 , RawArguments
-                                                , RawSelection(..)
+                                                , RawSelection
                                                 , RawSelectionSet
-                                                , Ref(..)
                                                 )
 
 
@@ -80,23 +81,23 @@ parseSelectionField = label "SelectionField" $ do
  where
     ----------------------------------------
   buildField selectionAlias selectionArguments selectionPosition = pure
-    (RawSelectionField $ Selection { selectionAlias
-                                   , selectionArguments
-                                   , selectionRec       = ()
-                                   , selectionPosition
-                                   }
+    (Selection { selectionAlias
+               , selectionArguments
+               , selectionContent   = SelectionField
+               , selectionPosition
+               }
     )
   -----------------------------------------
   selSet :: Maybe Text -> RawArguments -> Parser RawSelection
   selSet selectionAlias selectionArguments = label "body" $ do
     selectionPosition <- getLocation
-    selectionRec      <- parseSelectionSet
+    selectionSet      <- parseSelectionSet
     return
-      (RawSelectionSet $ Selection { selectionAlias
-                                   , selectionArguments
-                                   , selectionRec
-                                   , selectionPosition
-                                   }
+      (Selection { selectionAlias
+                 , selectionArguments
+                 , selectionContent   = SelectionSet selectionSet
+                 , selectionPosition
+                 }
       )
 
 

@@ -1,8 +1,124 @@
-## [0.7.2] -
+# Changelog
+
+## [0.9.1] - 02.01.2020
+
+- removed dependency `mtl`
+- MonadIO instance for resolvers. Thanks @dandoh
+- Example using STM, authentication, monad transformers. Thanks @dandoh
+
+## [0.9.0] - 02.01.2020
 
 ### Added
 
+- `WithOperation` constraint for Generic Resolvers (#347) thanks @dandoh
+
+### Fixed
+
+- liftEither support in MutResolver (#351)
+- selection of `__typename` on object und union objects (#337)
+- auto inferece of external types in gql document (#343)
+
+  th will generate field `m (Type m)` if type has an argument
+  
+  e.g for this types and DSL
+  
+  ```hs
+  data Type1 = Type1 { ... }
+  type Type2 m = SomeType m
+  data Type3 m = Type2 { bla :: m Text } deriving ...
+  ```
+
+  ```gql
+  type Query {
+    field1 : Type1!
+    field2 : Type2!
+    field3 : Type3!
+  }
+  ```  
+
+  morpheus generates
+
+  ```hs
+  data Query m = Query {
+    field1 :: m Type1
+    field2 :: m (Type2 m)
+    field3 :: m (Type3 m)
+  } deriving ...
+  ```
+
+  now you can combine multiple gql documents:
+  
+  ```hs
+  importDocumentWithNamespace `coreTypes.gql`
+  importDocumentWithNamespace `operations.gql`
+  ```
+
+### Changed
+
+- support of resolver fields `m type` for the fields without arguments
+
+  ```hs
+  data Diety m = Deity {
+      name :: m Text
+  }
+  -- is equal to
+  data Diety m = Deity {
+      name :: () -> m Text
+  }
+  ```
+
+- template haskell generates `m type`  insead of `() -> m type` for fields without argument (#334)
+
+  ```hs
+  data Diety m = Deity {
+      name :: (Arrow () (m Text)),
+      power :: (Arrow () (m (Maybe Text)))
+  }
+  -- changed to
+  data Diety m = Deity {
+      name :: m Text,
+      power :: m (Maybe Text)
+  }
+  ```
+
+## [0.8.0] - 15.12.2019
+
+### Changed
+
+- deprecated: `INPUT_OBJECT`, `OBJECT`, `UNION`,
+
+  - use `INPUT` instead of `INPUT_OBJECT`
+  - use `deriving(GQLType)` insead of `OBJECT` or `UNION`
+
+- only namespaced Unions  generate regular graphql Union, other attempts will be wrapped inside an object with constructor name :
+
+  e.g:
+  
+  ```hs
+  data Character =
+    CharacterDeity Deity
+    SomeDeity Deity
+    deriving (GQLType)
+  ```
+
+  where `Deity` is Object.
+  will generate
+
+  ```gql
+    union CHaracter = Deity | SomeDeity
+
+    type SomeDeity {
+      _0: Deity
+    }
+  ```
+
+### Added
+
+- `failRes` for resolver failures
+- added kind: INPUT , OUTPUT
 - Automatic Type Inference (only for Object, Union and Enum)
+- More general stateful resolvers which accept instances of MonadIO (Authored by Sebastian Pulido [sebashack])
+- Utility to create web-socket applications with custom MonadIO instances (Authored by Sebastian Pulido [sebashack])
 
 ```hs
 
@@ -126,17 +242,29 @@ rules:
     }
     ```
 
+### Removed
+
+- removed kind: INPUT_UNION
+
+### Fixed
+
+- on filed resolver was displayed. unexhausted case exception of graphql error
+- support of signed numbers (e.g `-4`)
+- support of round floats (e.g `1.000`) 
+- validation checks undefined fields on inputObject
+- variables are supported inside input values
+
 ## [0.7.1] - 26.11.2019
 
 - max bound icludes: support-megaparsec-8.0
 
 ## [0.7.0] - 24.11.2019
 
-## Removed
+### Removed
 
 - `toMorpheusHaskellAPi` from `Data.Morpheus.Document` functionality will be migrated in `morpheus-graphql-cli`
 
-## Changed
+### Changed
 
 - `liftM` to `MonadTrans` instance method `lift`
 
@@ -238,7 +366,7 @@ resolver _args = lift setDBAddress
 
   compiler output:
 
-  ```
+  ```json
   warning:
     Morpheus Client Warning:
     {
@@ -265,7 +393,7 @@ resolver _args = lift setDBAddress
 
 ## [0.6.2] - 2.11.2019
 
-## Added
+### Added
 
 - support of ghc 8.8.1
 
@@ -278,7 +406,7 @@ resolver _args = lift setDBAddress
 
 - example `API` executable is removed from Production build
 
-## Added
+### Added
 
 - helper functions: `liftEitherM` , `liftM`
 
@@ -300,7 +428,7 @@ resolver _args = lift setDBAddress
 - Parser supports anonymous Operation: `query` , `mutation` , `subscription`
   for example:
 
-  ```
+  ```gql
   mutation {
      name
   }

@@ -1,3 +1,4 @@
+{-# LANGUAGE GADTs                   #-}
 {-# LANGUAGE ConstrainedClassMethods #-}
 {-# LANGUAGE OverloadedStrings       #-}
 {-# LANGUAGE ScopedTypeVariables     #-}
@@ -10,14 +11,15 @@ where
 
 import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( DataValidator(..) )
-import           Data.Morpheus.Types.Internal.AST.Value
+import           Data.Morpheus.Types.Internal.AST
                                                 ( ScalarValue(..)
+                                                , ValidValue
                                                 , Value(..)
                                                 )
 import           Data.Proxy                     ( Proxy(..) )
 import           Data.Text                      ( Text )
 
-toScalar :: Value -> Either Text ScalarValue
+toScalar :: ValidValue -> Either Text ScalarValue
 toScalar (Scalar x) = pure x
 toScalar _          = Left ""
 
@@ -65,5 +67,6 @@ instance GQLScalar Int where
 
 instance GQLScalar Float where
   parseValue (Float x) = pure x
+  parseValue (Int   x) = pure $ fromInteger $ toInteger x
   parseValue _         = Left ""
   serialize = Float

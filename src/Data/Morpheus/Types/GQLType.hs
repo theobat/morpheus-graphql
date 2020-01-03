@@ -84,33 +84,24 @@ ignoreResolver (con, args) =
 class IsObject (a :: GQL_KIND) where
   isObject :: Proxy a -> Bool
 
-instance IsObject OBJECT where
-  isObject _ = False
-
 instance IsObject SCALAR where
   isObject _ = False
 
 instance IsObject ENUM where
   isObject _ = False
 
-instance IsObject UNION where
-  isObject _ = True
-
-instance IsObject INPUT_UNION where
-  isObject _ = False
-
-instance IsObject INPUT_OBJECT where
-  isObject _ = False
-
 instance IsObject WRAPPER where
   isObject _ = False
 
-instance IsObject AUTO where
+instance IsObject INPUT where
+  isObject _ = True
+
+instance IsObject OUTPUT where
   isObject _ = True
 
 class IsObject (KIND a) => GQLType a where
   type KIND a :: GQL_KIND
-  type KIND a = AUTO
+  type KIND a = OUTPUT
   type CUSTOM a :: Bool
   type CUSTOM a = FALSE
   description :: Proxy a -> Maybe Text
@@ -126,7 +117,7 @@ class IsObject (KIND a) => GQLType a where
   __typeFingerprint :: Proxy a -> DataFingerprint
   default __typeFingerprint :: (Typeable a) =>
     Proxy a -> DataFingerprint
-  __typeFingerprint _ = TypeableFingerprint $ map show $ conFingerprints (Proxy @a)
+  __typeFingerprint _ = DataFingerprint "Typeable" $ map show $ conFingerprints (Proxy @a)
     where
       conFingerprints = fmap (map tyConFingerprint) (ignoreResolver . splitTyConApp . typeRep)
 
@@ -173,10 +164,10 @@ instance GQLType a => GQLType (Set a) where
   __typeFingerprint _ = __typeFingerprint (Proxy @a)
 
 instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (Pair a b) where
-  type KIND (Pair a b) = OBJECT
+  type KIND (Pair a b) = OUTPUT
 
 instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (MapKind a b m) where
-  type KIND (MapKind a b m) = OBJECT
+  type KIND (MapKind a b m) = OUTPUT
   __typeName _ = __typeName (Proxy @(Map a b))
   __typeFingerprint _ = __typeFingerprint (Proxy @(Map a b))
 

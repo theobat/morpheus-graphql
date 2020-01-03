@@ -34,11 +34,10 @@ import           Data.Morpheus.Parsing.Internal.Terms
 import           Data.Morpheus.Types.Internal.AST
                                                 ( DataField
                                                 , DataFingerprint(..)
-                                                , DataTyCon(..)
+                                                , DataTypeContent(..)
                                                 , DataType(..)
                                                 , DataValidator(..)
                                                 , Key
-                                                , RawDataType(..)
                                                 , Meta(..)
                                                 )
 
@@ -54,12 +53,11 @@ scalarTypeDefinition metaDescription = label "ScalarTypeDefinition" $ do
   metaDirectives <- optionalDirectives
   pure
     ( typeName
-    , DataScalar DataTyCon
-      { typeName
-      , typeMeta        = Just Meta { metaDescription, metaDirectives }
-      , typeFingerprint = SystemFingerprint typeName
-      , typeData        = DataValidator pure
-      }
+    , DataType { typeName
+               , typeMeta        = Just Meta { metaDescription, metaDirectives }
+               , typeFingerprint = DataFingerprint typeName []
+               , typeContent     = DataScalar $ DataValidator pure
+               }
     )
 
 -- Objects : https://graphql.github.io/graphql-spec/June2018/#sec-Objects
@@ -77,20 +75,20 @@ scalarTypeDefinition metaDescription = label "ScalarTypeDefinition" $ do
 --  FieldDefinition
 --    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)
 --
-objectTypeDefinition :: Maybe Text -> Parser (Text, RawDataType)
+objectTypeDefinition :: Maybe Text -> Parser (Text, DataType)
 objectTypeDefinition metaDescription = label "ObjectTypeDefinition" $ do
-  name           <- typDeclaration "type"
-  interfaces     <- optionalImplementsInterfaces
-  metaDirectives <- optionalDirectives
-  fields         <- fieldsDefinition
+  typeName         <- typDeclaration "type"
+  objectImplements <- optionalImplementsInterfaces
+  metaDirectives   <- optionalDirectives
+  objectFields     <- fieldsDefinition
   --------------------------
   pure
-    ( name
-    , Implements interfaces $ DataTyCon
-      { typeName        = name
-      , typeMeta        = Just Meta { metaDescription, metaDirectives }
-      , typeFingerprint = SystemFingerprint name
-      , typeData        = fields
+    ( typeName
+    , DataType
+      { typeName
+      , typeMeta          = Just Meta { metaDescription, metaDirectives }
+      , typeFingerprint   = DataFingerprint typeName []
+      , typeContent       = DataObject { objectImplements, objectFields }
       }
     )
 
@@ -105,19 +103,18 @@ optionalImplementsInterfaces = implements <|> pure []
 --  InterfaceTypeDefinition
 --    Description(opt) interface Name Directives(Const)(opt) FieldsDefinition(opt)
 --
-interfaceTypeDefinition :: Maybe Text -> Parser (Text, RawDataType)
+interfaceTypeDefinition :: Maybe Text -> Parser (Text, DataType)
 interfaceTypeDefinition metaDescription = label "InterfaceTypeDefinition" $ do
-  typeName       <- typDeclaration "interface"
+  typeName  <- typDeclaration "interface"
   metaDirectives <- optionalDirectives
   fields         <- fieldsDefinition
   pure
     ( typeName
-    , Interface DataTyCon
-      { typeName
-      , typeMeta        = Just Meta { metaDescription, metaDirectives }
-      , typeFingerprint = SystemFingerprint typeName
-      , typeData        = fields
-      }
+    , DataType { typeName
+               , typeMeta        = Just Meta { metaDescription, metaDirectives }
+               , typeFingerprint = DataFingerprint typeName []
+               , typeContent     = DataInterface fields
+               }
     )
 
 
@@ -137,12 +134,11 @@ unionTypeDefinition metaDescription = label "UnionTypeDefinition" $ do
   memberTypes    <- unionMemberTypes
   pure
     ( typeName
-    , DataUnion DataTyCon
-      { typeName
-      , typeMeta        = Just Meta { metaDescription, metaDirectives }
-      , typeFingerprint = SystemFingerprint typeName
-      , typeData        = memberTypes
-      }
+    , DataType { typeName
+               , typeMeta        = Just Meta { metaDescription, metaDirectives }
+               , typeFingerprint = DataFingerprint typeName []
+               , typeContent     = DataUnion memberTypes
+               }
     )
   where unionMemberTypes = operator '=' *> parseName `sepBy1` pipeLiteral
 
@@ -164,12 +160,11 @@ enumTypeDefinition metaDescription = label "EnumTypeDefinition" $ do
   enumValuesDefinitions <- setOf enumValueDefinition
   pure
     ( typeName
-    , DataEnum DataTyCon
-      { typeName
-      , typeMeta        = Just Meta { metaDescription, metaDirectives }
-      , typeFingerprint = SystemFingerprint typeName
-      , typeData        = enumValuesDefinitions
-      }
+    , DataType { typeName
+               , typeMeta        = Just Meta { metaDescription, metaDirectives }
+               , typeFingerprint = DataFingerprint typeName []
+               , typeContent     = DataEnum enumValuesDefinitions
+               }
     )
 
 
@@ -189,12 +184,11 @@ inputObjectTypeDefinition metaDescription =
     fields         <- inputFieldsDefinition
     pure
       ( typeName
-      , DataInputObject DataTyCon
-        { typeName
-        , typeMeta        = Just Meta { metaDescription, metaDirectives }
-        , typeFingerprint = SystemFingerprint typeName
-        , typeData        = fields
-        }
+      , DataType { typeName
+                 , typeMeta = Just Meta { metaDescription, metaDirectives }
+                 , typeFingerprint = DataFingerprint typeName []
+                 , typeContent     = DataInputObject fields
+                 }
       )
  where
   inputFieldsDefinition :: Parser [(Key, DataField)]
@@ -205,21 +199,14 @@ inputObjectTypeDefinition metaDescription =
 parseFinalDataType :: Maybe Text -> Parser (Text, DataType)
 parseFinalDataType description =
   label "TypeDefinition"
-    $   inputObjectTypeDefinition description
+     $  inputObjectTypeDefinition description
     <|> unionTypeDefinition description
     <|> enumTypeDefinition description
     <|> scalarTypeDefinition description
+    <|> objectTypeDefinition description
+    <|> interfaceTypeDefinition description
 
-parseDataType :: Parser (Text, RawDataType)
+parseDataType :: Parser (Text, DataType)
 parseDataType = label "TypeDefinition" $ do
   description <- optDescription
-  types description
- where
-  types description =
-    interfaceTypeDefinition description
-      <|> objectTypeDefinition description
-      <|> finalDataT
-   where
-    finalDataT = do
-      (name, datatype) <- parseFinalDataType description
-      pure (name, FinalDataType datatype)
+  parseFinalDataType description

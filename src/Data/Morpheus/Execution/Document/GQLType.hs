@@ -19,12 +19,10 @@ import           Data.Semigroup                 ( (<>) )
 import           Data.Morpheus.Execution.Internal.Declare
                                                 ( tyConArgs )
 import           Data.Morpheus.Kind             ( ENUM
-                                                , INPUT_OBJECT
-                                                , INPUT_UNION
-                                                , OBJECT
                                                 , SCALAR
-                                                , UNION
                                                 , WRAPPER
+                                                , INPUT
+                                                , OUTPUT
                                                 )
 import           Data.Morpheus.Types.GQLType    ( GQLType(..)
                                                 , TRUE
@@ -36,6 +34,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , isSchemaTypeName
                                                 , GQLTypeD(..)
                                                 , TypeD(..)
+                                                , Key
                                                 )
 import           Data.Morpheus.Types.Internal.TH
                                                 ( instanceHeadT
@@ -45,9 +44,11 @@ import           Data.Morpheus.Types.Internal.TH
                                                 )
 import           Data.Typeable                  ( Typeable )
 
-genTypeName :: String -> String
-genTypeName ('S' : name) | isSchemaTypeName (pack name) = name
-genTypeName name = name
+genTypeName :: Key -> Key
+genTypeName = pack . __genTypeName . unpack
+ where
+  __genTypeName ('S' : name) | isSchemaTypeName (pack name) = name
+  __genTypeName name = name
 
 deriveGQLType :: GQLTypeD -> Q [Dec]
 deriveGQLType GQLTypeD { typeD = TypeD { tName, tMeta }, typeKindD } =
@@ -55,18 +56,16 @@ deriveGQLType GQLTypeD { typeD = TypeD { tName, tMeta }, typeKindD } =
  where
   functions = map
     instanceProxyFunD
-    [ ('__typeName , [|pack (genTypeName tName)|])
-    , ('description, descriptionValue)
-    ]
+    [('__typeName, [|genTypeName tName|]), ('description, descriptionValue)]
    where
     descriptionValue = case tMeta >>= metaDescription of
-      Nothing -> [| Nothing  |]
-      Just x  -> [| Just (pack desc)|] where desc = unpack x
+      Nothing   -> [| Nothing   |]
+      Just desc -> [| Just desc |]
   -------------------------------------------------
   typeArgs   = tyConArgs typeKindD
   ----------------------------------------------
   iHead      = instanceHeadT ''GQLType tName typeArgs
-  headSig    = typeT (mkName tName) typeArgs
+  headSig    = typeT (mkName $ unpack tName) typeArgs
   -----------------------------------------------
   constrains = map conTypeable typeArgs
     where conTypeable name = typeT ''Typeable [name]
@@ -84,9 +83,9 @@ deriveGQLType GQLTypeD { typeD = TypeD { tName, tMeta }, typeKindD } =
     ---------------------------------
     toKIND KindScalar      = ''SCALAR
     toKIND KindEnum        = ''ENUM
-    toKIND (KindObject _)  = ''OBJECT
-    toKIND KindUnion       = ''UNION
-    toKIND KindInputObject = ''INPUT_OBJECT
+    toKIND (KindObject _)  = ''OUTPUT
+    toKIND KindUnion       = ''OUTPUT
+    toKIND KindInputObject = ''INPUT
     toKIND KindList        = ''WRAPPER
     toKIND KindNonNull     = ''WRAPPER
-    toKIND KindInputUnion  = ''INPUT_UNION
+    toKIND KindInputUnion  = ''INPUT

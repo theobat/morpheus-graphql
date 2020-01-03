@@ -14,9 +14,7 @@ module Data.Morpheus.Execution.Internal.Declare
 where
 
 import           Data.Maybe                     ( maybe )
-import           Data.Text                      ( pack
-                                                , unpack
-                                                )
+import           Data.Text                      ( unpack )
 import           GHC.Generics                   ( Generic )
 import           Language.Haskell.TH
 
@@ -26,40 +24,45 @@ import           Data.Morpheus.Execution.Internal.Utils
                                                 , nameSpaceWith
                                                 )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( ArgsType(..)
-                                                , DataField(..)
+                                                ( DataField(..)
                                                 , DataTypeKind(..)
                                                 , DataTypeKind(..)
-                                                , TypeAlias(..)
+                                                , TypeRef(..)
                                                 , TypeWrapper(..)
                                                 , isOutputObject
                                                 , isSubscription
                                                 , ConsD(..)
                                                 , TypeD(..)
+                                                , Key
+                                                , isOutputObject
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( UnSubResolver )
 
 type Arrow = (->)
 
-declareTypeAlias :: Bool -> TypeAlias -> Type
-declareTypeAlias isSub TypeAlias { aliasTyCon, aliasWrappers, aliasArgs } =
-  wrappedT aliasWrappers
+
+m_ :: Key
+m_ = "m"
+
+declareTypeRef :: Bool -> TypeRef -> Type
+declareTypeRef isSub TypeRef { typeConName, typeWrappers, typeArgs } = wrappedT
+  typeWrappers
  where
   wrappedT :: [TypeWrapper] -> Type
   wrappedT (TypeList  : xs) = AppT (ConT ''[]) $ wrappedT xs
   wrappedT (TypeMaybe : xs) = AppT (ConT ''Maybe) $ wrappedT xs
-  wrappedT []               = decType aliasArgs
+  wrappedT []               = decType typeArgs
   ------------------------------------------------------
-  typeName = ConT (mkName $ unpack aliasTyCon)
+  typeName = ConT (mkName $ unpack typeConName)
   --------------------------------------------
   decType _ | isSub =
-    AppT typeName (AppT (ConT ''UnSubResolver) (VarT $ mkName "m"))
+    AppT typeName (AppT (ConT ''UnSubResolver) (VarT $ mkName $ unpack m_))
   decType (Just par) = AppT typeName (VarT $ mkName $ unpack par)
   decType _          = typeName
 
-tyConArgs :: DataTypeKind -> [String]
-tyConArgs kindD | isOutputObject kindD || kindD == KindUnion = ["m"]
+tyConArgs :: DataTypeKind -> [Key]
+tyConArgs kindD | isOutputObject kindD || kindD == KindUnion = [m_]
                 | otherwise = []
 
 -- declareType
@@ -68,9 +71,9 @@ declareType namespace kindD derivingList TypeD { tName, tCons, tNamespace } =
   DataD [] (genName tName) tVars Nothing (map cons tCons)
     $ map derive (''Generic : derivingList)
  where
-  genName = mkName . nameSpaceType (map pack tNamespace) . pack
+  genName = mkName . unpack . nameSpaceType tNamespace
   tVars   = maybe [] (declareTyVar . tyConArgs) kindD
-    where declareTyVar = map (PlainTV . mkName)
+    where declareTyVar = map (PlainTV . mkName . unpack)
   defBang = Bang NoSourceUnpackedness NoSourceStrictness
   derive className = DerivClause Nothing [ConT className]
   cons ConsD { cName, cFields } = RecC (genName cName)
@@ -79,23 +82,20 @@ declareType namespace kindD derivingList TypeD { tName, tCons, tNamespace } =
     declareField DataField { fieldName, fieldArgsType, fieldType } =
       (fName, defBang, fiType)
      where
-      fName | namespace = mkName (nameSpaceWith tName (unpack fieldName))
+      fName | namespace = mkName $ unpack (nameSpaceWith tName fieldName)
             | otherwise = mkName (unpack fieldName)
       fiType = genFieldT fieldArgsType
        where
-        monadVar = VarT $ mkName "m"
+        monadVar = VarT $ mkName $ unpack m_
         ---------------------------
-        genFieldT Nothing                          = fType False
-        genFieldT (Just ArgsType { argsTypeName }) = AppT
+        genFieldT Nothing
+          | (isOutputObject <$> kindD) == Just True = AppT monadVar result
+          | otherwise                             = result
+        genFieldT (Just argsTypeName) = AppT
           (AppT arrowType argType)
-          (fType True)
+          (AppT monadVar result)
          where
           argType   = ConT $ mkName (unpack argsTypeName)
           arrowType = ConT ''Arrow
         ------------------------------------------------
-        fType isResolver
-          | maybe False isSubscription kindD = AppT monadVar result
-          | isResolver                       = AppT monadVar result
-          | otherwise                        = result
-        ------------------------------------------------
-        result = declareTypeAlias (maybe False isSubscription kindD) fieldType
+        result = declareTypeRef (maybe False isSubscription kindD) fieldType

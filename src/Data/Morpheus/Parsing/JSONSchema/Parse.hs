@@ -21,10 +21,12 @@ import           Data.Morpheus.Parsing.JSONSchema.Types
                                                 , Type(..)
                                                 )
 import           Data.Morpheus.Schema.TypeKind  ( TypeKind(..) )
+import qualified Data.Morpheus.Types.Internal.AST as AST
+                                                ( Schema)
 import           Data.Morpheus.Types.Internal.AST
                                                 ( DataField
                                                 , DataType(..)
-                                                , DataTypeLib
+                                                , DataTypeContent(..)
                                                 , DataTypeWrapper(..)
                                                 , Key
                                                 , TypeWrapper
@@ -45,7 +47,7 @@ import           Data.Text                      ( Text
                                                 , pack
                                                 )
 
-decodeIntrospection :: ByteString -> Validation DataTypeLib
+decodeIntrospection :: ByteString -> Validation AST.Schema
 decodeIntrospection jsonDoc = case jsonSchema of
   Left errors -> internalError $ pack errors
   Right JSONResponse { responseData = Just Introspection { __schema = Schema { types } } }
@@ -70,11 +72,11 @@ instance ParseJSONSchema Type [(Key,DataType)] where
   parse Type { name = Just typeName, kind = INPUT_OBJECT, inputFields = Just iFields }
     = do
       fields <- traverse parse iFields
-      pure [(typeName, DataInputObject $ createType typeName fields)]
+      pure [(typeName, createType typeName $ DataInputObject fields)]
   parse Type { name = Just typeName, kind = OBJECT, fields = Just oFields } =
     do
       fields <- traverse parse oFields
-      pure [(typeName, DataObject $ createType typeName fields)]
+      pure [(typeName, createType typeName $ DataObject [] fields)]
   parse _ = pure []
 
 instance ParseJSONSchema Field (Key,DataField) where

@@ -5,7 +5,7 @@ module Data.Morpheus.Types.Internal.Resolving
     , Resolver(..)
     , ResolvingStrategy(..)
     , MapStrategy(..)
-    , LiftEither(..)
+    , LiftOperation
     , resolveObject
     , toResponseRes
     , withObject
@@ -27,6 +27,11 @@ module Data.Morpheus.Types.Internal.Resolving
     , GQLErrors
     , GQLError(..)
     , Position
+    , resolveEnum
+    , resolve__typename
+    , DataResolver(..)
+    , FieldRes
+    , WithOperation
     )
 where
 
