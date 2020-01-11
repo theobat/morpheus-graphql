@@ -186,12 +186,12 @@ resolveObject selectionSet (ObjectRes resolvers) =
   gqlObject <$> traverse selectResolver selectionSet
  where
   selectResolver (key, selection@Selection { selectionAlias }) = trace
-    (  "key="
-    <> show key
-    <> ("key=" <> show key <> " | selectionSet=" <> show
-         (fst <$> fieldResolvers)
-       )
-    )
+    ("key="
+    -- <> show key
+    -- <> ("key=" <> show key <> " | selectionSet=" <> show
+    --      (fst <$> fieldResolvers)
+    --    )
+           )
     ((fromMaybe key selectionAlias, ) <$> lookupRes selection)
    where
     lookupRes sel =
