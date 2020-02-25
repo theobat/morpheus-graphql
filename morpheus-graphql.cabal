@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 85594476231d4f128a54bbd745cdbec49a8ce0828850bab6c028c8b1cac59b80
+-- hash: dbfa497db2fe7287e56f5f87359c2d4c885f4d02fb40d6a1937aa9a6b44e370a
 
 name:           morpheus-graphql
-version:        0.9.1
+version:        0.10.0
 synopsis:       Morpheus GraphQL
 description:    Build GraphQL APIs with your favourite functional language!
 category:       web, graphql
@@ -69,6 +69,7 @@ data-files:
     test/Feature/Holistic/parsing/duplicatedFields/query.gql
     test/Feature/Holistic/parsing/extraCommas/query.gql
     test/Feature/Holistic/parsing/generousSpaces/query.gql
+    test/Feature/Holistic/parsing/inputListValues/query.gql
     test/Feature/Holistic/parsing/invalidFields/query.gql
     test/Feature/Holistic/parsing/invalidNotNullOperator/query.gql
     test/Feature/Holistic/parsing/missingCloseBrace/query.gql
@@ -194,6 +195,8 @@ data-files:
     test/Feature/Holistic/parsing/duplicatedFields/response.json
     test/Feature/Holistic/parsing/extraCommas/response.json
     test/Feature/Holistic/parsing/generousSpaces/response.json
+    test/Feature/Holistic/parsing/inputListValues/response.json
+    test/Feature/Holistic/parsing/inputListValues/variables.json
     test/Feature/Holistic/parsing/invalidFields/response.json
     test/Feature/Holistic/parsing/invalidNotNullOperator/response.json
     test/Feature/Holistic/parsing/missingCloseBrace/response.json
@@ -343,9 +346,7 @@ library
       Data.Morpheus.Execution.Server.Interpreter
       Data.Morpheus.Execution.Server.Introspect
       Data.Morpheus.Execution.Server.Resolve
-      Data.Morpheus.Execution.Subscription.Apollo
-      Data.Morpheus.Execution.Subscription.ClientRegister
-      Data.Morpheus.Parsing.Document.Parser
+      Data.Morpheus.Execution.Server.Subscription
       Data.Morpheus.Parsing.Document.TypeSystem
       Data.Morpheus.Parsing.Internal.Internal
       Data.Morpheus.Parsing.Internal.Pattern
@@ -365,6 +366,8 @@ library
       Data.Morpheus.Types.GQLScalar
       Data.Morpheus.Types.GQLType
       Data.Morpheus.Types.ID
+      Data.Morpheus.Types.Internal.Apollo
+      Data.Morpheus.Types.Internal.AST.Base
       Data.Morpheus.Types.Internal.AST.Data
       Data.Morpheus.Types.Internal.AST.Value
       Data.Morpheus.Types.Internal.Resolving
