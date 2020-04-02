@@ -10,11 +10,13 @@ module Data.Morpheus.Parsing.Internal.Terms
   , spaceAndComments1
   , pipeLiteral
   -------------
+  , collection
   , setOf
+  , uniqTuple
+  , uniqTupleOpt
   , parseTypeCondition
   , spreadLiteral
   , parseNonNull
-  , parseMaybeTuple
   , parseAssignment
   , parseWrappedType
   , litEquals
@@ -27,10 +29,12 @@ module Data.Morpheus.Parsing.Internal.Terms
   , keyword
   , operator
   , optDescription
+  , optionalList
   , parseNegativeSign
   )
 where
 
+import           Control.Monad                  ((>=>))
 import           Data.Functor                   ( ($>) )
 import           Data.Text                      ( Text
                                                 , pack
@@ -61,6 +65,10 @@ import           Text.Megaparsec.Char           ( char
                                                 )
 
 -- MORPHEUS
+import           Data.Morpheus.Types.Internal.Operation
+                                                ( Listable(..)
+                                                , KeyOf
+                                                )
 import           Data.Morpheus.Parsing.Internal.Internal
                                                 ( Parser
                                                 , Position
@@ -96,9 +104,11 @@ operator :: Char -> Parser ()
 operator x = char x *> spaceAndComments
 
 -- LITERALS
-setLiteral :: Parser [a] -> Parser [a]
-setLiteral =
-  between (char '{' *> spaceAndComments) (char '}' *> spaceAndComments)
+braces :: Parser [a] -> Parser [a]
+braces =
+  between 
+    (char '{' *> spaceAndComments) 
+    (char '}' *> spaceAndComments)
 
 pipeLiteral :: Parser ()
 pipeLiteral = char '|' *> spaceAndComments
@@ -185,8 +195,11 @@ sepByAnd :: Parser a -> Parser [a]
 sepByAnd entry = entry `sepBy` (char '&' *> spaceAndComments)
 
 -----------------------------
-setOf :: Parser a -> Parser [a]
-setOf entry = setLiteral (entry `sepEndBy` many (char ',' *> spaceAndComments))
+collection :: Parser a -> Parser [a]
+collection entry = braces (entry `sepEndBy` many (char ',' *> spaceAndComments))
+
+setOf :: (Listable c a , KeyOf a) => Parser a -> Parser c
+setOf = collection >=> fromList
 
 parseNonNull :: Parser [DataTypeWrapper]
 parseNonNull = do
@@ -194,8 +207,8 @@ parseNonNull = do
   spaceAndComments
   return wrapper
 
-parseMaybeTuple :: Parser a -> Parser [a]
-parseMaybeTuple parser = parseTuple parser <|> pure []
+optionalList :: Parser [a] -> Parser [a] 
+optionalList x = x <|> pure []
 
 parseTuple :: Parser a -> Parser [a]
 parseTuple parser = label "Tuple" $ between
@@ -203,6 +216,12 @@ parseTuple parser = label "Tuple" $ between
   (char ')' *> spaceAndComments)
   (parser `sepBy` (many (char ',') *> spaceAndComments) <?> "empty Tuple value!"
   )
+
+uniqTuple :: (Listable c a , KeyOf a) => Parser a -> Parser c
+uniqTuple = parseTuple >=> fromList
+
+uniqTupleOpt :: (Listable c a , KeyOf a) => Parser a -> Parser c
+uniqTupleOpt = optionalList . parseTuple  >=> fromList
 
 parseAssignment :: (Show a, Show b) => Parser a -> Parser b -> Parser (a, b)
 parseAssignment nameParser valueParser = label "assignment" $ do

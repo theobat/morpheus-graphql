@@ -23,17 +23,15 @@ import           Data.Morpheus.Parsing.Internal.Terms
                                                 , litAssignment
                                                 , operator
                                                 , optDescription
-                                                , parseAssignment
-                                                , parseMaybeTuple
                                                 , parseName
                                                 , parseType
                                                 , setOf
-                                                , parseTuple
+                                                , uniqTuple
                                                 )
+import           Data.Morpheus.Parsing.Internal.Arguments
+                                                ( parseArgumentsOpt )
 import           Data.Morpheus.Parsing.Internal.Value
-                                                ( parseDefaultValue
-                                                , parseValue
-                                                )
+                                                ( parseDefaultValue )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( FieldDefinition(..)
                                                 , Directive(..)
@@ -42,9 +40,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Name
                                                 , ArgumentsDefinition(..)
                                                 , FieldsDefinition(..)
-                                                , Listable(..)
                                                 )
-
 
 --  EnumValueDefinition: https://graphql.github.io/graphql-spec/June2018/#EnumValueDefinition
 --
@@ -86,9 +82,10 @@ inputValueDefinition = label "InputValueDefinition" $ do
 -- ArgumentsDefinition:
 --   ( InputValueDefinition(list) )
 --
-argumentsDefinition :: Parser (ArgumentsDefinition)
-argumentsDefinition =
-    label "ArgumentsDefinition" $ (ArgumentsDefinition Nothing <$> parseTuple inputValueDefinition) <|> pure NoArguments
+argumentsDefinition :: Parser ArgumentsDefinition
+argumentsDefinition = label "ArgumentsDefinition" 
+     $  uniqTuple inputValueDefinition
+    <|> pure NoArguments
 
 --  FieldsDefinition : https://graphql.github.io/graphql-spec/June2018/#FieldsDefinition
 --
@@ -96,7 +93,7 @@ argumentsDefinition =
 --    { FieldDefinition(list) }
 --
 fieldsDefinition :: Parser FieldsDefinition
-fieldsDefinition = label "FieldsDefinition" $ fromList <$> setOf fieldDefinition
+fieldsDefinition = label "FieldsDefinition" $ setOf fieldDefinition
 
 --  FieldDefinition
 --    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)
@@ -120,8 +117,8 @@ fieldDefinition = label "FieldDefinition" $ do
 --   InputFieldsDefinition:
 --     { InputValueDefinition(list) }
 --
-inputFieldsDefinition :: Parser (FieldsDefinition)
-inputFieldsDefinition = label "InputFieldsDefinition" $ fromList <$> setOf inputValueDefinition
+inputFieldsDefinition :: Parser FieldsDefinition
+inputFieldsDefinition = label "InputFieldsDefinition" $ setOf inputValueDefinition
 
 -- Directives : https://graphql.github.io/graphql-spec/June2018/#sec-Language.Directives
 --
@@ -140,9 +137,8 @@ directive :: Parser Directive
 directive = label "Directive" $ do
     operator '@'
     directiveName <- parseName
-    directiveArgs <- parseMaybeTuple (parseAssignment parseName parseValue)
+    directiveArgs <- parseArgumentsOpt
     pure Directive { directiveName, directiveArgs }
-
 
 -- typDeclaration : Not in spec ,start part of type definitions
 --

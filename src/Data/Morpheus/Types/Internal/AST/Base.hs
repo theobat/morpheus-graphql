@@ -1,17 +1,19 @@
-{-# LANGUAGE DeriveAnyClass     #-}
-{-# LANGUAGE DeriveGeneric      #-}
-{-# LANGUAGE DeriveLift         #-}
-{-# LANGUAGE NamedFieldPuns     #-}
-{-# LANGUAGE DataKinds          #-}
-{-# LANGUAGE OverloadedStrings  #-}
+{-# LANGUAGE DeriveAnyClass             #-}
+{-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE DeriveLift                 #-}
+{-# LANGUAGE NamedFieldPuns             #-}
+{-# LANGUAGE DataKinds                  #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
 
 module Data.Morpheus.Types.Internal.AST.Base
   ( Key
-  , Collection
   , Ref(..)
   , Position(..)
   , Message
   , Name
+  , Named
   , Description
   , VALID
   , RAW
@@ -27,9 +29,8 @@ module Data.Morpheus.Types.Internal.AST.Base
   , DataTypeKind(..)
   , DataFingerprint(..)
   , DataTypeWrapper(..)
+  --, Named(..)
   , anonymousRef
-  , removeDuplicates
-  , elementOfKeys
   , toHSWrappers
   , toGQLWrapper
   , sysTypes
@@ -45,6 +46,13 @@ module Data.Morpheus.Types.Internal.AST.Base
   , isNullableWrapper
   , isOutputType
   , sysFields
+  , typeFromScalar
+  , hsTypeName
+  , toOperationType
+  , splitDuplicates
+  , removeDuplicates
+  , GQLError(..)
+  , GQLErrors
   )
 where
 
@@ -54,15 +62,20 @@ import           Data.Aeson                     ( FromJSON
                                                 )
 import           Data.Text                      ( Text )
 import           GHC.Generics                   ( Generic )
-import           Language.Haskell.TH.Syntax     ( Lift )
-import           Instances.TH.Lift              ( )
-import qualified Data.Set                      as S
+import           Language.Haskell.TH.Syntax     ( Lift(..) )
+import           Instances.TH.Lift              ()
+
+data GQLError = GQLError
+  { message      :: Text
+  , locations :: [Position]
+  } deriving ( Show, Generic, FromJSON, ToJSON)
+
+type GQLErrors = [GQLError]
 
 type Key = Text
 type Message = Text
 type Name = Key
 type Description = Key
-type Collection a = [(Key, a)]
 data Stage = RAW | RESOLVED | VALID
 
 type RAW = 'RAW
@@ -74,7 +87,12 @@ type VALID = 'VALID
 data Position = Position
   { line   :: Int
   , column :: Int
-  } deriving (Show, Generic, FromJSON, ToJSON, Lift)
+  } deriving ( Show, Generic, FromJSON, ToJSON, Lift)
+
+-- Positions 2 Value withs same structire
+-- but different Positions should be Equal
+instance Eq Position where
+  _ == _ = True
 
 data VALIDATION_MODE
   = WITHOUT_VARIABLES
@@ -92,6 +110,8 @@ data OperationType
 type QUERY = 'Query
 type MUTATION = 'Mutation
 type SUBSCRIPTION = 'Subscription
+
+type Named a = (Name, a) 
 
 -- Refference with Position information  
 --
@@ -111,14 +131,13 @@ instance Ord Ref where
 anonymousRef :: Key -> Ref
 anonymousRef refName = Ref { refName, refPosition = Position 0 0 }
 
-
 -- TypeRef
 -------------------------------------------------------------------
 data TypeRef = TypeRef
   { typeConName    :: Name
   , typeArgs     :: Maybe Name
   , typeWrappers :: [TypeWrapper]
-  } deriving (Show,Lift)
+  } deriving (Show, Eq, Lift)
 
 isNullable :: TypeRef -> Bool
 isNullable TypeRef { typeWrappers = typeWrappers } = isNullableWrapper typeWrappers
@@ -165,7 +184,7 @@ isInput _               = False
 data TypeWrapper
   = TypeList
   | TypeMaybe
-  deriving (Show, Lift)
+  deriving (Show, Eq, Lift)
 
 data DataTypeWrapper
   = ListType
@@ -197,14 +216,6 @@ toHSWrappers (ListType : xs) = [TypeMaybe, TypeList] <> toHSWrappers xs
 toHSWrappers []                              = [TypeMaybe]
 toHSWrappers [NonNullType]                   = []
 
--- Helpers
-
-removeDuplicates :: Ord a => [a] -> [a]
-removeDuplicates = S.toList . S.fromList
-
-elementOfKeys :: [Name] -> Ref -> Bool
-elementOfKeys keys Ref { refName } = refName `elem` keys
-
 isDefaultTypeName :: Key -> Bool
 isDefaultTypeName x = isSchemaTypeName x || isPrimitiveTypeName x
 
@@ -228,3 +239,36 @@ sysTypes =
 
 sysFields :: [Key]
 sysFields = ["__typename","__schema","__type"]
+
+typeFromScalar :: Name -> Name
+typeFromScalar "Boolean" = "Bool"
+typeFromScalar "Int"     = "Int"
+typeFromScalar "Float"   = "Float"
+typeFromScalar "String"  = "Text"
+typeFromScalar "ID"      = "ID"
+typeFromScalar _         = "ScalarValue"
+
+hsTypeName :: Key -> Key
+hsTypeName "String"                    = "Text"
+hsTypeName "Boolean"                   = "Bool"
+hsTypeName name | name `elem` sysTypes = "S" <> name
+hsTypeName name                        = name
+
+toOperationType :: Name -> Maybe OperationType
+toOperationType "Subscription" = Just Subscription
+toOperationType "Mutation" = Just Mutation
+toOperationType "Query" = Just Query
+toOperationType _ = Nothing
+
+removeDuplicates :: Eq a => [a] -> [a]
+removeDuplicates = fst . splitDuplicates
+
+-- elems -> (unique elements, duplicate elems)
+splitDuplicates :: Eq a => [a] -> ([a],[a])
+splitDuplicates = collectElems ([],[])
+  where
+    collectElems :: Eq a => ([a],[a]) -> [a] -> ([a],[a])
+    collectElems collected [] = collected
+    collectElems (collected,errors) (x:xs)
+        | x `elem` collected = collectElems (collected,errors <> [x]) xs
+        | otherwise = collectElems (collected <> [x],errors) xs

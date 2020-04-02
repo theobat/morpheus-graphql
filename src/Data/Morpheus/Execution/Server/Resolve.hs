@@ -18,7 +18,6 @@ module Data.Morpheus.Execution.Server.Resolve
   )
 where
 
-import           Data.Semigroup                 ((<>))
 import           Data.Aeson                     ( encode )
 import           Data.Aeson.Internal            ( formatError
                                                 , ifromJSON
@@ -72,6 +71,10 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Selection(..)
                                                 , SelectionContent(..)
                                                 , FieldsDefinition(..)
+                                                )
+import           Data.Morpheus.Types.Internal.Operation
+                                                ( Merge(..)
+                                                , empty
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLRootResolver(..)
@@ -165,15 +168,13 @@ coreResolver root@GQLRootResolver { queryResolver, mutationResolver, subscriptio
     pure $ Context {
         schema
       , operation
-      , currentSelection = (
-        "Root"
-        , Selection {
-          selectionArguments = []
+      , currentSelection = Selection
+          { selectionName = "Root"
+          , selectionArguments = empty
           , selectionPosition = operationPosition operation
           , selectionAlias = Nothing
           , selectionContent = SelectionSet (operationSelection operation)
-        } 
-    )
+        }
   }
   ----------------------------------------------------------
   execOperator ctx@Context {schema ,operation = Operation{ operationType} } = execOperationBy operationType ctx
@@ -203,9 +204,9 @@ fullSchema
   -> Validation Schema
 fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
  where
-  querySchema = resolveUpdates
-    (initTypeLib (operatorType (hiddenRootFields <> fields) "Query"))
-    (defaultTypes : types)
+  querySchema = do
+    fs <- hiddenRootFields <:> fields
+    resolveUpdates (initTypeLib (operatorType fs "Query")) (defaultTypes : types)
    where
     (fields, types) = introspectObjectFields
       (Proxy @(CUSTOM (query (Resolver QUERY event m))))

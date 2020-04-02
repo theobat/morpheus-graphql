@@ -17,6 +17,7 @@ import           Data.Aeson                     ( FromJSON(..)
                                                 , withObject
                                                 , (.:?)
                                                 , (.=)
+                                                , object
                                                 )
 import qualified Data.Aeson                    as Aeson
                                                 ( Value(..) )
@@ -25,14 +26,13 @@ import qualified Data.HashMap.Lazy             as LH
 import           GHC.Generics                   ( Generic )
 
 -- MORPHEUS
-import           Data.Morpheus.Types.Internal.AST.Base
-                                                ( Key )
-import           Data.Morpheus.Types.Internal.Resolving.Core
-                                                ( GQLError(..)
-                                                , Result(..)
+import           Data.Morpheus.Types.Internal.AST
+                                                ( Key 
+                                                , GQLError(..)
+                                                , ValidValue
                                                 )
-import           Data.Morpheus.Types.Internal.AST.Value
-                                                ( ValidValue )
+import           Data.Morpheus.Types.Internal.Resolving.Core
+                                                ( Result(..))
 
 
 renderResponse :: Result e GQLError con ValidValue -> GQLResponse
@@ -69,5 +69,8 @@ instance FromJSON GQLResponse where
   parseJSON _ = fail "Invalid GraphQL Response"
 
 instance ToJSON GQLResponse where
+  toJSON (Data gqlData) = object ["data" .= toJSON gqlData]
+  toJSON (Errors errors) = object ["errors" .= toJSON errors]
+  ----------------------------------------------------------
   toEncoding (Data   _data  ) = pairs $ "data" .= _data
   toEncoding (Errors _errors) = pairs $ "errors" .= _errors

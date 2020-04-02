@@ -1,23 +1,24 @@
-{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE NamedFieldPuns             #-}
+{-# LANGUAGE OverloadedStrings          #-}
 
 module Data.Morpheus.Error.Utils
   ( errorMessage
   , globalErrorMessage
   , badRequestError
   , toLocation
+  , duplicateKeyError
   )
 where
 
+import           Data.Semigroup                         ((<>))
 import           Data.ByteString.Lazy.Char8     ( ByteString
                                                 , pack
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Base
-                                                ( Position )
-import           Data.Morpheus.Types.Internal.Resolving.Core
-                                                ( GQLError(..)
-                                                , GQLErrors
+                                                ( Position(..)
+                                                , Named
                                                 , GQLError(..)
-                                                , Position(..)
+                                                , GQLErrors
                                                 )
 import           Data.Text                      ( Text )
 import           Text.Megaparsec                ( SourcePos(SourcePos)
@@ -25,6 +26,10 @@ import           Text.Megaparsec                ( SourcePos(SourcePos)
                                                 , sourceLine
                                                 , unPos
                                                 )
+
+-- TODO: add Location
+duplicateKeyError :: Named a -> GQLError
+duplicateKeyError (name,_) = GQLError { message = "duplicate key \"" <> name <> "\"", locations = []}
 
 errorMessage :: Position -> Text -> GQLErrors
 errorMessage position message = [GQLError { message, locations = [position] }]

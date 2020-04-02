@@ -1,10 +1,20 @@
 # Changelog
 
-## 0.10.1 - 10.02.2020
+## 0.11.0 - Unreleased
 
-### Added
+### Breaking Changes
 
+- Client generated enum data constructors are now prefixed with with the type name to avoid name conflicts.
+
+### New features
+
+- Instead of rejecting conflicting selections, they are merged (based on the GraphQL specification).
 - Support for input lists separated by newlines. thanks @charlescrain
+- conflicting variable , fragment ... validation
+
+### minor
+
+- changes to internal types
 
 ## 0.10.0 - 07.01.2020
 
