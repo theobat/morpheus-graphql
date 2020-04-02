@@ -378,12 +378,9 @@ library
       Data.Morpheus.Types.ID
       Data.Morpheus.Types.Internal.Apollo
       Data.Morpheus.Types.Internal.AST.Data
-<<<<<<< HEAD
-=======
       Data.Morpheus.Types.Internal.AST.MergeSet
       Data.Morpheus.Types.Internal.AST.OrderedMap
       Data.Morpheus.Types.Internal.AST.Selection
->>>>>>> master
       Data.Morpheus.Types.Internal.AST.Value
       Data.Morpheus.Types.Internal.Operation
       Data.Morpheus.Types.Internal.Resolving
