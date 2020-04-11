@@ -9,14 +9,13 @@ module Data.Morpheus.Parsing.Internal.Internal
 where
 
 import qualified Data.List.NonEmpty            as NonEmpty
-import           Data.Morpheus.Error.Utils      ( toLocation )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( Position 
+                                                ( Position(..)
                                                 , GQLError(..)
                                                 , GQLErrors
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
-                                                ( Validation
+                                                ( Stateless
                                                 , failure
                                                 , Result(..)
                                                 )
@@ -36,17 +35,23 @@ import           Text.Megaparsec                ( ParseError
                                                 , getSourcePos
                                                 , parseErrorPretty
                                                 , runParserT
+                                                , SourcePos(..)
+                                                , unPos
                                                 )
 import           Data.Void                      (Void)
 
 getLocation :: Parser Position
 getLocation = fmap toLocation getSourcePos
 
+toLocation :: SourcePos -> Position
+toLocation SourcePos { sourceLine, sourceColumn } =
+  Position { line = unPos sourceLine, column = unPos sourceColumn }
+
 type MyError = Void
-type Parser = ParsecT MyError Text Validation
+type Parser = ParsecT MyError Text Stateless
 type ErrorBundle = ParseErrorBundle Text MyError
 
-processParser :: Parser a -> Text -> Validation a
+processParser :: Parser a -> Text -> Stateless a
 processParser parser txt = case runParserT parser [] txt of
   Success { result } -> case result of
     Right root       -> pure root

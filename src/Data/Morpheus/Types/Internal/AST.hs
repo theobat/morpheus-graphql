@@ -1,7 +1,9 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE DeriveLift           #-}
-{-# LANGUAGE OverloadedStrings    #-}
-{-# LANGUAGE ScopedTypeVariables  #-}
+{-# LANGUAGE FlexibleContexts       #-}
+{-# LANGUAGE DeriveLift             #-}
+{-# LANGUAGE OverloadedStrings      #-}
+{-# LANGUAGE ScopedTypeVariables    #-}
+{-# LANGUAGE DuplicateRecordFields  #-}
+{-# LANGUAGE NamedFieldPuns         #-}
 
 module Data.Morpheus.Types.Internal.AST
   (
@@ -35,10 +37,8 @@ module Data.Morpheus.Types.Internal.AST
   , ResolvedObject
   , ResolvedValue
   , Named
-  , unpackInputUnion
   , splitDuplicates
   , removeDuplicates
-
   -- Selection
   , Argument(..)
   , Arguments
@@ -52,11 +52,9 @@ module Data.Morpheus.Types.Internal.AST
   , Operation(..)
   , Variable(..)
   , VariableDefinitions
-  , ValidVariables
   , DefaultValue
   , getOperationName
   , getOperationDataType
-  , getOperationObject
   -- DSL
   , ScalarDefinition(..)
   , DataEnum
@@ -65,6 +63,7 @@ module Data.Morpheus.Types.Internal.AST
   , DataUnion
   , ArgumentsDefinition(..)
   , FieldDefinition(..)
+  , InputFieldsDefinition(..)
   , TypeContent(..)
   , TypeDefinition(..)
   , Schema(..)
@@ -111,12 +110,6 @@ module Data.Morpheus.Types.Internal.AST
   , isSchemaTypeName
   , isPrimitiveTypeName
   , isEntNode
-  , lookupInputType
-  , coerceDataObject
-  , lookupDataUnion
-  , lookupUnionTypes
-  , lookupSelectionField
-  , lookupFieldAsSelectionSet
   , createField
   , createArgument
   , createDataTypeLib
@@ -133,7 +126,6 @@ module Data.Morpheus.Types.Internal.AST
   , lookupDeprecatedReason
   , hasArguments
   , lookupWith
-  , selectTypeObject
   , typeFromScalar
   -- Temaplate Haskell
   , toHSFieldDefinition
@@ -143,35 +135,26 @@ module Data.Morpheus.Types.Internal.AST
   , Variables
   , isNullableWrapper
   , unsafeFromFields
+  , unsafeFromInputFields
   , OrderedMap
   , GQLError(..)
   , GQLErrors
   , ObjectEntry(..)
   , UnionTag(..)
+  , isInputDataType
+  , __inputname
   )
 where
 
 import           Data.Map                       ( Map )
 import           Language.Haskell.TH.Syntax     ( Lift )
-import           Data.Semigroup                 ( (<>) )
 
 -- Morpheus
-import           Data.Morpheus.Types.Internal.Operation  
-                                                ( Listable(..)
-                                                , selectBy
-                                                )
-import           Data.Morpheus.Types.Internal.AST.Data
-
-import           Data.Morpheus.Types.Internal.AST.Selection
-
 import           Data.Morpheus.Types.Internal.AST.Base
-
-import           Data.Morpheus.Types.Internal.AST.OrderedMap
-
 import           Data.Morpheus.Types.Internal.AST.Value
-
-import           Data.Morpheus.Types.Internal.Resolving.Core
-                                                ( Failure(..) )
+import           Data.Morpheus.Types.Internal.AST.Selection
+import           Data.Morpheus.Types.Internal.AST.Data
+import           Data.Morpheus.Types.Internal.AST.OrderedMap
 
 type Variables = Map Key ResolvedValue
 
@@ -180,29 +163,3 @@ data GQLQuery = GQLQuery
   , operation      :: Operation RAW
   , inputVariables :: [(Key, ResolvedValue)]
   } deriving (Show,Lift)
-
-unpackInputUnion
-  :: forall stage. [(Name, Bool)]
-  -> Object stage
-  -> Either Message (Name, Maybe (Value stage))
-unpackInputUnion tags hm = do
-  (enum :: Value stage) <- entryValue <$> selectBy 
-      ("valid input union should contain __typename and actual value" :: Message) 
-      "__typename" 
-      hm
-  tyName <- isPosibeUnion tags enum
-  case size hm of
-    1 -> pure (tyName, Nothing)
-    2 -> do
-      value <- entryValue <$> selectBy 
-          ("value for Union \""<> tyName <> "\" was not Provided.") 
-          tyName 
-          hm
-      pure (tyName , Just value)
-    _ -> failure ("more then 1 value for Union was not Provided." :: Message)
-
-isPosibeUnion :: [(Name, Bool)] -> Value stage -> Either Message Name
-isPosibeUnion tags (Enum name) = case lookup name tags of
-  Nothing -> failure (name <> " is not posible union type" :: Message)
-  _       -> pure name
-isPosibeUnion _ _ = failure ("__typename must be Enum" :: Message)

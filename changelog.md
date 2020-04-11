@@ -5,12 +5,14 @@
 ### Breaking Changes
 
 - Client generated enum data constructors are now prefixed with with the type name to avoid name conflicts.
+- for Variant selection inputUnion uses `inputname` insead of `__typename`
 
 ### New features
 
 - Instead of rejecting conflicting selections, they are merged (based on the GraphQL specification).
 - Support for input lists separated by newlines. thanks @charlescrain
 - conflicting variable , fragment ... validation
+- issue #411: Aeson `FromJSON` `ToJSON` instances for `ID` 
 
 ### minor
 
