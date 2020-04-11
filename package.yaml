@@ -48,6 +48,7 @@ library:
     - Data.Morpheus.Types.Internal.AST.Selection
     - Data.Morpheus.Types.Internal.AST.Base
     - Data.Morpheus.Types.Internal.AST
+    - Data.Morpheus.Types.Internal.AST.MergeSet
   ghc-options: -Wall
 
 tests:
