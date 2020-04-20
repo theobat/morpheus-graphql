@@ -22,6 +22,7 @@ module Data.Morpheus.Types.Internal.AST.Selection
   , DefaultValue
   , getOperationName
   , getOperationDataType
+  , Arguments
   )
 where
 

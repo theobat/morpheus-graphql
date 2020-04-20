@@ -7,7 +7,7 @@
 {-# LANGUAGE OverloadedStrings          #-}
 
 module Data.Morpheus.Types.Internal.AST.MergeSet
-    ( MergeSet
+    ( MergeSet(MergeSet)
     , toOrderedMap
     , concatTraverse
     , join

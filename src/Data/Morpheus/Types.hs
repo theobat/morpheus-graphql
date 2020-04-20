@@ -36,6 +36,7 @@ module Data.Morpheus.Types
   , subscribe
   , unsafeInternalContext
   , SubField
+  , Context(Context, currentSelection)
   )
 where
 
@@ -71,6 +72,7 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , subscribe
                                                 , unsafeInternalContext
                                                 , UnSubResolver
+                                                , Context(Context, currentSelection)
                                                 )
 import           Data.Morpheus.Types.IO         ( GQLRequest(..)
                                                 , GQLResponse(..)
