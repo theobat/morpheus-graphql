@@ -1,22 +1,128 @@
 # Changelog
 
-## 0.11.0 - Unreleased
+## 0.12.0 Unreleased Changes
+
+### Breaking Changes
+
+Package was extracted as:
+
+- `morpheus-graphql-core`: core components like: parser, validator, executor, utils.
+  - Data.Morpheus.Core
+  - Data.Morpheus.QuasiQuoter
+  - Data.Morpheus.Error
+  - Data.Morpheus.Internal.TH
+  - Data.Morpheus.Internal.Utils
+  - Data.Morpheus.Types.Internal.Resolving
+  - Data.Morpheus.Types.Internal.Operation
+  - Data.Morpheus.Types.Internal.AST
+  - Data.Morpheus.Types.IO
+
+- `morpheus-graphql-client`: lightweight version of morpheus client without server implementation
+  - Data.Morpheus.Client
+
+- `morpheus-graphql`: morpheus graphql server
+  - Data.Morpheus
+  - Data.Morpheus.Kind
+  - Data.Morpheus.Types
+  - Data.Morpheus.Server
+  - Data.Morpheus.Document
+
+deprecated:
+
+- `Res`, `IORes`, `ResolveQ` : use `ResolverQ`
+- `MutRes`, `IOMutRes`, `ResolveM` : use `ResolverM`
+- `SubRes`, `IOSubRes`, `ResolveS`: use `ResolverS`
+- `failRes`: use `MonadFail`
+
+## New Feature
+
+- `Semigroup` support for Resolver
+- `MonadFail` Support for Resolver
+- flexible resolvers: `ResolverO`, `ResolverQ` , `RwsolverM`, `ResolverS`
+  they can handle object and scalar types:
+
+  ```hs
+  -- if we have record and regular Int
+  data Object m = Object { field :: m Int }
+
+  -- we canwrite
+  -- handes kind : (* -> *) -> *
+  resolveObject :: ResolverO o EVENT IO Object
+  -- is alias to: Resolver o () IO (Object (Resolver o () IO))
+  -- or
+  -- handes kind : *
+  resolveInt :: ResolverO o EVENT IO Int
+  -- is alias to: Resolver o () IO Int
+  ```
+
+  the resolvers : `ResolverQ` , `RwsolverM`, `ResolverS` , are like
+  `ResolverO` but with `QUERY` , `MUTATION` and `SUBSCRIPTION` as argument.
+
+- flexible compsed Resolver Type alias: `ComposedResolver`. extends `ResolverO` with
+  parameter `(f :: * -> *)`. so that you can compose Resolvers e.g:
+  
+  ```hs
+  resolveList :: ComposedResolver o EVENT IO [] Object
+  -- is alias to: Resolver o () IO [Object (Resolver o () IO))]
+  
+  resolveList :: ComposedResolver o EVENT IO Maybe Int
+  -- is alias to: Resolver o () IO (Maybe Int)
+  ```
+
+### minor
+
+- fixed subscription sessions, srarting new session does not affects old ones.
+- added tests for subscriptions
+
+## 0.11.0 - 01.05.2020
 
 ### Breaking Changes
 
 - Client generated enum data constructors are now prefixed with with the type name to avoid name conflicts.
 - for Variant selection inputUnion uses `inputname` insead of `__typename`
 
+- in `Data.Morpheus.Server`  
+  - `gqlSocketApp` and `gqlSocketMonadIOApp` are replaced with `webSocketsApp`
+  - removed `initGQLState`, `GQLState`
+
+- for better control of subscriptions
+  - replaced instance  `interpreter gqlRoot state` with
+    `interpreter gqlRoot`.
+  - added: `Input`, `Stream`, `httpPubApp`
+  
+  from now on you can define API that can be
+  used in websockets as well as in http servers
+
+  ```hs
+  api :: Input api -> Stream api EVENT IO
+  api = interpreter gqlRoot
+  
+  server :: IO ()
+  server = do
+    (wsApp, publish) <- webSocketsApp api
+    let httpApp = httpPubApp api publish
+    ...
+    runBoth wsApp httpApp
+  ```
+  
+  where `publish :: e -> m ()`
+
+  websockets and http app do not have to be on the same server. 
+  e.g. you can pass events between servers with webhooks.
+
+- subscription can select only one top level field (based on the GraphQL specification).
+
 ### New features
 
 - Instead of rejecting conflicting selections, they are merged (based on the GraphQL specification).
 - Support for input lists separated by newlines. thanks @charlescrain
 - conflicting variable , fragment ... validation
-- issue #411: Aeson `FromJSON` `ToJSON` instances for `ID` 
+- issue #411: Aeson `FromJSON` `ToJSON` instances for `ID`
 
 ### minor
 
 - changes to internal types
+- fixed validation of apollo websockets requests  
 
 ## 0.10.0 - 07.01.2020
 

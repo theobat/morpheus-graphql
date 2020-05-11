@@ -4,10 +4,14 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
+<<<<<<< HEAD
 -- hash: 1d25fd6045a2130fe588f923d8a17fcc9d830e14c5bf5f303e1e09580d80363e
+=======
+-- hash: 6e149fb61111540b14d06189b74a5f6310e08e8c26063c8b93948f11e8b13bab
+>>>>>>> f8f27bb604670d9375ba26eaaf5bb950f4f651c5
 
 name:           morpheus-graphql
-version:        0.10.1
+version:        0.11.0
 synopsis:       Morpheus GraphQL
 description:    Build GraphQL APIs with your favourite functional language!
 category:       web, graphql
@@ -89,6 +93,8 @@ data-files:
     test/Feature/Holistic/selection/mergeSelection/query.gql
     test/Feature/Holistic/selection/mergeUnionSelection/query.gql
     test/Feature/Holistic/selection/mustHaveSubFields/query.gql
+    test/Feature/Holistic/selection/subscription/singleTopLevelField/fail/query.gql
+    test/Feature/Holistic/selection/subscription/singleTopLevelField/failAnonymous/query.gql
     test/Feature/Holistic/selection/unknownField/query.gql
     test/Feature/Input/Enum/decode2Con/query.gql
     test/Feature/Input/Enum/decode3Con/query.gql
@@ -155,6 +161,7 @@ data-files:
     test/Feature/WrappedTypeName/ignoreSubscriptionResolver/query.gql
     test/Feature/WrappedTypeName/validWrappedTypes/query.gql
     test/Rendering/schema.gql
+    test/Subscription/schema.gql
     test/Feature/Holistic/arguments/nameConflict/response.json
     test/Feature/Holistic/arguments/undefinedArgument/response.json
     test/Feature/Holistic/arguments/unknownArguments/response.json
@@ -223,6 +230,8 @@ data-files:
     test/Feature/Holistic/selection/mergeSelection/response.json
     test/Feature/Holistic/selection/mergeUnionSelection/response.json
     test/Feature/Holistic/selection/mustHaveSubFields/response.json
+    test/Feature/Holistic/selection/subscription/singleTopLevelField/fail/response.json
+    test/Feature/Holistic/selection/subscription/singleTopLevelField/failAnonymous/response.json
     test/Feature/Holistic/selection/unknownField/response.json
     test/Feature/Input/Enum/cases.json
     test/Feature/Input/Enum/decode2Con/response.json
@@ -323,6 +332,7 @@ library
       Data.Morpheus.Types
       Data.Morpheus.Server
       Data.Morpheus.Document
+<<<<<<< HEAD
       Data.Morpheus.Client
       Data.Morpheus.Types.Internal.AST.Selection
       Data.Morpheus.Types.Internal.AST.Base
@@ -404,6 +414,32 @@ library
       Data.Morpheus.Validation.Query.UnionSelection
       Data.Morpheus.Validation.Query.Validation
       Data.Morpheus.Validation.Query.Variable
+=======
+      Data.Morpheus.Types.Internal.Subscription
+  other-modules:
+      Data.Morpheus.Server.Deriving.Decode
+      Data.Morpheus.Server.Deriving.Encode
+      Data.Morpheus.Server.Deriving.Generics.EnumRep
+      Data.Morpheus.Server.Deriving.Interpreter
+      Data.Morpheus.Server.Deriving.Introspect
+      Data.Morpheus.Server.Deriving.Resolve
+      Data.Morpheus.Server.Document.Compile
+      Data.Morpheus.Server.Document.Convert
+      Data.Morpheus.Server.Document.Declare
+      Data.Morpheus.Server.Document.Decode
+      Data.Morpheus.Server.Document.Encode
+      Data.Morpheus.Server.Document.GQLType
+      Data.Morpheus.Server.Document.Introspect
+      Data.Morpheus.Server.Internal.TH.Decode
+      Data.Morpheus.Server.Schema.TypeKind
+      Data.Morpheus.Server.Types.GQLScalar
+      Data.Morpheus.Server.Types.GQLType
+      Data.Morpheus.Server.Types.ID
+      Data.Morpheus.Server.Types.Types
+      Data.Morpheus.Types.Internal.Subscription.Apollo
+      Data.Morpheus.Types.Internal.Subscription.ClientConnectionStore
+      Data.Morpheus.Types.Internal.Subscription.Stream
+>>>>>>> f8f27bb604670d9375ba26eaaf5bb950f4f651c5
       Paths_morpheus_graphql
   hs-source-dirs:
       src
@@ -414,12 +450,14 @@ library
     , bytestring >=0.10.4 && <0.11
     , containers >=0.4.2.1 && <0.7
     , megaparsec >=7.0.0 && <9.0.0
+    , morpheus-graphql-core >=0.11.0
     , mtl >=2.0 && <=2.3
     , scientific >=0.3.6.2 && <0.4
     , template-haskell >=2.0 && <=2.16
     , text >=1.2.3.0 && <1.3
     , th-lift-instances >=0.1.1 && <=0.2.0
     , transformers >=0.3.0.0 && <0.6
+    , unliftio-core >=0.0.1 && <=0.3
     , unordered-containers >=0.2.8.0 && <0.3
     , uuid >=1.0 && <=1.4
     , vector >=0.12.0.1 && <0.13
@@ -443,7 +481,13 @@ test-suite morpheus-test
       Lib
       Rendering.Schema
       Rendering.TestSchemaRendering
+      Subscription.API
+      Subscription.Case.ApolloRequest
+      Subscription.Case.Publishing
+      Subscription.Test
+      Subscription.Utils
       TestFeature
+      Types
       Paths_morpheus_graphql
   hs-source-dirs:
       test
@@ -455,6 +499,7 @@ test-suite morpheus-test
     , containers >=0.4.2.1 && <0.7
     , megaparsec >=7.0.0 && <9.0.0
     , morpheus-graphql
+    , morpheus-graphql-core >=0.11.0
     , mtl >=2.0 && <=2.3
     , scientific >=0.3.6.2 && <0.4
     , tasty
@@ -463,6 +508,7 @@ test-suite morpheus-test
     , text >=1.2.3.0 && <1.3
     , th-lift-instances >=0.1.1 && <=0.2.0
     , transformers >=0.3.0.0 && <0.6
+    , unliftio-core >=0.0.1 && <=0.3
     , unordered-containers >=0.2.8.0 && <0.3
     , uuid >=1.0 && <=1.4
     , vector >=0.12.0.1 && <0.13
