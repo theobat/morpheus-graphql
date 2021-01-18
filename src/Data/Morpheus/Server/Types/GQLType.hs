@@ -31,6 +31,7 @@ module Data.Morpheus.Server.Types.GQLType
     __isObjectKind,
     __isEmptyType,
     __typeData,
+    __type,
   )
 where
 

@@ -10,7 +10,7 @@
 
 -- | GQL Types
 module Data.Morpheus.Types
-  ( GQLType (KIND, description, implements, getDescriptions, typeOptions, getDirectives),
+  ( GQLType (KIND, description, implements, getDescriptions, typeOptions, getDirectives, __type),
     EncodeScalar (..),
     EncodeWrapper (..),
     DecodeScalar (..),
@@ -124,11 +124,11 @@ import Data.Proxy
   ( Proxy (..),
   )
 import Prelude
-  ( ($),
-    (.),
-    IO,
+  ( IO,
     String,
     const,
+    ($),
+    (.),
   )
 
 class FlexibleResolver (f :: * -> *) (a :: k) where
