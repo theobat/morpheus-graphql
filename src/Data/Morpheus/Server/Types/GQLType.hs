@@ -89,6 +89,7 @@ import Data.Typeable
     typeRep,
     typeRepTyCon,
   )
+import Data.Vector (Vector)
 import Relude hiding (Undefined, intercalate)
 
 data TypeData = TypeData
@@ -266,6 +267,10 @@ instance GQLType a => GQLType (Maybe a) where
 instance GQLType a => GQLType [a] where
   type KIND [a] = WRAPPER
   __type _ = wrapper list . __type (Proxy @a)
+
+instance GQLType a => GQLType (Vector a) where
+  type KIND (Vector a) = WRAPPER
+  __type _ = __type $ Proxy @[a]
 
 instance GQLType a => GQLType (Set a) where
   type KIND (Set a) = WRAPPER
